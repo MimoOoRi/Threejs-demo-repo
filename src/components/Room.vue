@@ -10,10 +10,14 @@ import g, { GUI } from 'three/examples/jsm/libs/lil-gui.module.min';
 
 const canvasDom = ref(null);
 let base = reactive({});
+let dirLight = null;
 const baseModel = MODELS[0]
 const texture = new THREE.TextureLoader()
 const pointLights = { cup1: { rgb: [1, .54, .54], color: 'pink' }, cup2: { rgb: [.2, .2, 0], color: 'yellow' } }
 const colorLights = { pink: { light: null, isClose: false }, yellow: { light: null, isClose: false } }
+const imgSet = { 'sun': { src: 'images/太阳.png', theme: 'sun' }, 'moon': { src: 'images/月亮.png', theme: 'moon' } }
+const imgSrc = ref(imgSet.sun)
+const imgDom = ref()
 let roomObj = null
 
 const raycaster = new THREE.Raycaster()
@@ -23,8 +27,6 @@ raycaster1.layers.set(2)
 const pointer = new THREE.Vector2()
 const pointer1 = new THREE.Vector2()
 const actionStatus = { pcScreen: false, light: false }
-const moveDistance = { x: 0, y: 0 }
-const lastPosition = { x: 0, y: 0 }
 
 const meshGroup = { door: null, book: null }
 const objectActions = {
@@ -45,7 +47,28 @@ onMounted(() => {
   loaderGLTF()
   window.addEventListener('pointermove', onHoverItem);
   window.addEventListener('pointerdown', onClickItem);
+
+  gsap.from('.title-text', {
+    duration: 3.5, scale: .5, rotation: 360, opacity: 0, delay: 0.2, stagger: .2, ease: 'elastic'
+  })
+
+  imgDom.value.addEventListener('click', () => {
+    if (!(gsap.isTweening(dirLight) && gsap.isTweening(dirLight.position))) {
+      console.log('imgSrc.value :>> ', imgSrc.value);
+      imgSrc.value = imgSrc.value.theme === 'sun' ? imgSet.moon : imgSet.sun
+      const curTheme = imgSrc.value.theme
+
+      if (curTheme === 'moon') {
+        gsap.to(dirLight.position, { x: -5, y: -6, z: 0, duration: 3 })
+        gsap.to(dirLight, { intensity: 0, duration: 1 })
+      } else {
+        gsap.to(dirLight.position, { x: -10, y: 50, z: 10, duration: 1.5 })
+        gsap.to(dirLight, { intensity: 1, duration: 1 })
+      }
+    }
+  })
 })
+
 const loaderGLTF = () => {
   const dracoLoader = new DRACOLoader()
   dracoLoader.setDecoderPath('draco/')
@@ -71,8 +94,7 @@ const loaderGLTF = () => {
 const addLight = () => {
   const light = new THREE.AmbientLight();
   base.scene.add(light)
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.set(2024, 2024)
   base.scene.add(dirLight);
@@ -132,6 +154,7 @@ const videoPreset = (url) => {
   video.play();
   return video;
 }
+
 const handleVideoTexture = (video, isRotate) => {
   const videoTexture = new THREE.VideoTexture(video);
   videoTexture.minFilter = THREE.NearestFilter;
@@ -186,8 +209,6 @@ const handleMesh = (obj) => {
     }
   }
 }
-
-
 
 const objectAction = (name, { action, args }) => {
   gsap.to(meshGroup[name]?.[action], args)
@@ -265,10 +286,45 @@ const onClickItem = (event) => {
 </script>
 
 <template>
+  <div class="title-left">
+    <img :src="imgSrc.src" alt="" class="title-text title" ref="imgDom">
+    <span class="title-text text-left">T</span>
+    <span class="title-text text-left">h</span>
+    <span class="title-text text-left">r</span>
+    <span class="title-text text-left">e</span>
+    <span class="title-text text-left">e</span>
+  </div>
+  <div class="title-right">
+    <span class="title-text text-right">房</span>
+    <span class="title-text text-right">间</span>
+  </div>
   <canvas id="canvasDom" ref="canvasDom"></canvas>
 </template>
 
 <style scoped>
-#canvasDom {}
+#canvasDom {
+  width: 100vw;
+  height: 100vh;
+}
+
+.title-left,
+.title-right {
+  position: fixed;
+  z-index: 1000;
+  display: inline-flex;
+  left: 23%;
+  top: 40%;
+  font-size: 30px;
+  color: white;
+}
+
+.title-right {
+  left: 75%;
+}
+
+img {
+  height: 40px;
+  width: 40px;
+}
 </style>
 
